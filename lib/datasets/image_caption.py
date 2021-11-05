@@ -264,8 +264,8 @@ def process_caption(vocab, caption, drop, opt):
                     tokens[i] = random.randrange(len(vocab))
                 # 40% randomly remove the token
                 else:
+                    tokens[i] = vocab(token)
                     if opt.drop_remove:
-                        tokens[i] = vocab(token)
                         deleted_idx.append(i)
             else:
                 tokens[i] = vocab(token)
