@@ -224,9 +224,9 @@ class PrecompRegionDataset(data.Dataset):
         caption = self.captions[index]
 
         # Convert caption (string) to word ids (with Size Augmentation at training time).
-        target = process_caption(self.vocab, caption, self.drop_cap)
+        target = process_caption(self.vocab, caption, self.train & self.drop_cap, self.opt)
         image = self.images[img_index]
-        if self.drop_img:  # Size augmentation on region features.
+        if self.train & self.drop_img:  # Size augmentation on region features.
             num_features = image.shape[0]
             rand_list = np.random.rand(num_features)
             image = image[np.where(rand_list > 0.20)]
@@ -237,7 +237,7 @@ class PrecompRegionDataset(data.Dataset):
         return self.length
 
 
-def process_caption(vocab, caption, drop=False):
+def process_caption(vocab, caption, drop, opt):
     if not drop:
         tokens = nltk.tokenize.word_tokenize(caption.lower())
         caption = list()
@@ -257,15 +257,16 @@ def process_caption(vocab, caption, drop=False):
             if prob < 0.20:
                 prob /= 0.20
                 # 50% randomly change token to mask token
-                if prob < 0.5:
+                if prob < 0.5 and opt.drop_mask:
                     tokens[i] = vocab.word2idx['<mask>']
                 # 10% randomly change token to random token
-                elif prob < 0.6:
+                elif prob < 0.6 and opt.drop_random:
                     tokens[i] = random.randrange(len(vocab))
                 # 40% randomly remove the token
                 else:
-                    tokens[i] = vocab(token)
-                    deleted_idx.append(i)
+                    if opt.drop_remove:
+                        tokens[i] = vocab(token)
+                        deleted_idx.append(i)
             else:
                 tokens[i] = vocab(token)
         if len(deleted_idx) != 0:

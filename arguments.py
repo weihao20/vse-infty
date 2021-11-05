@@ -72,5 +72,8 @@ def get_argument_parser():
     #                     help='Whether using drop words')
     parser.add_argument('--drop_img', action='store_true')
     parser.add_argument('--drop_cap', action='store_true')
+    parser.add_argument('--drop_random', action='store_true')
+    parser.add_argument('--drop_mask', action='store_true')
+    parser.add_argument('--drop_remove', action='store_true')
 
     return parser
