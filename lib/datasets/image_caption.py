@@ -229,7 +229,11 @@ class PrecompRegionDataset(data.Dataset):
         if self.train & self.drop_img:  # Size augmentation on region features.
             num_features = image.shape[0]
             rand_list = np.random.rand(num_features)
+            # if self.opt.drop_remove:
             image = image[np.where(rand_list > 0.20)]
+            # elif self.opt.drop_mask:
+            #     removed = image[np.where(rand_list <= 0.20)]
+            #     image[np.where(rand_list <= 0.20)] = np.zeros_like(removed)
         image = torch.Tensor(image)
         return image, target, index, img_index
 
@@ -257,16 +261,18 @@ def process_caption(vocab, caption, drop, opt):
             if prob < 0.20:
                 prob /= 0.20
                 # 50% randomly change token to mask token
-                if prob < 0.5 and opt.drop_mask:
+                # if prob < 0.5 and opt.drop_mask:
+                if prob < 0.5:
                     tokens[i] = vocab.word2idx['<mask>']
                 # 10% randomly change token to random token
-                elif prob < 0.6 and opt.drop_random:
+                # elif prob < 0.6 and opt.drop_random:
+                elif prob < 0.6:
                     tokens[i] = random.randrange(len(vocab))
                 # 40% randomly remove the token
                 else:
                     tokens[i] = vocab(token)
-                    if opt.drop_remove:
-                        deleted_idx.append(i)
+                    # if opt.drop_remove:
+                    deleted_idx.append(i)
             else:
                 tokens[i] = vocab(token)
         if len(deleted_idx) != 0:

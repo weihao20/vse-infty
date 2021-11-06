@@ -44,12 +44,24 @@ class ContrastiveLoss(nn.Module):
         cost_s = cost_s.masked_fill_(I, 0)
         cost_im = cost_im.masked_fill_(I, 0)
 
+        cost_s_max = cost_s.max(1)[0]
+        cost_im_max = cost_im.max(0)[0]
         # keep the maximum violating negative for each query
         if self.max_violation:
             cost_s = cost_s.max(1)[0]
             cost_im = cost_im.max(0)[0]
 
-        return cost_s.sum() + cost_im.sum()
+        return cost_s.sum() + cost_im.sum(), cost_s_max.detach(), cost_im_max.detach()
+
+    def forward2(self, img, cap, img_neg_ind, cap_neg_ind):
+        img_neg = img[img_neg_ind]
+        cap_neg = cap[cap_neg_ind]
+        pos = (img * cap).sum(1)
+        i2t_neg = (img * cap_neg).sum(1)
+        t2i_neg = (cap * img_neg).sum(1)
+        cost_s = (self.margin + i2t_neg - pos).clamp(min=0).detach()
+        cost_im = (self.margin + t2i_neg - pos).clamp(min=0).detach()
+        return cost_s, cost_im
 
 
 def get_sim(images, captions):
