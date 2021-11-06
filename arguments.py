@@ -75,5 +75,8 @@ def get_argument_parser():
     parser.add_argument('--drop_random', action='store_true')
     parser.add_argument('--drop_mask', action='store_true')
     parser.add_argument('--drop_remove', action='store_true')
+    parser.add_argument('--drop_img_mean', action='store_true')
+    parser.add_argument('--drop_img_zero', action='store_true')     # useless
+    parser.add_argument('--drop_img_remove', action='store_true')   # useful
 
     return parser

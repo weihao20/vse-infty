@@ -229,11 +229,15 @@ class PrecompRegionDataset(data.Dataset):
         if self.train & self.drop_img:  # Size augmentation on region features.
             num_features = image.shape[0]
             rand_list = np.random.rand(num_features)
-            # if self.opt.drop_remove:
-            image = image[np.where(rand_list > 0.20)]
-            # elif self.opt.drop_mask:
-            #     removed = image[np.where(rand_list <= 0.20)]
-            #     image[np.where(rand_list <= 0.20)] = np.zeros_like(removed)
+            if self.opt.drop_img_remove:
+                image = image[np.where(rand_list > 0.20)]
+            elif self.opt.drop_img_zero:
+                removed = image[np.where(rand_list <= 0.20)]
+                image[np.where(rand_list <= 0.20)] = np.zeros_like(removed)
+            elif self.opt.drop_img_mean:
+                removed = image[np.where(rand_list <= 0.20)]
+                remain = image[np.where(rand_list > 0.20)]
+                image[np.where(rand_list <= 0.20)] = np.mean(remain, 0) * np.ones_like(removed)
         image = torch.Tensor(image)
         return image, target, index, img_index
 

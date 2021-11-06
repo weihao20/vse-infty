@@ -143,17 +143,9 @@ class VSEModel(object):
     def forward_loss(self, img_emb, cap_emb):
         """Compute the loss given pairs of image and caption embeddings
         """
-        loss, loss_i2t, loss_t2i = self.criterion(img_emb, cap_emb)
+        loss = self.criterion(img_emb, cap_emb)
         self.logger.update('Le', loss.data.item(), img_emb.size(0))
-        return loss, loss_i2t, loss_t2i
-
-    # TODO Two Forward
-    def select_triplet(self, img_emb, cap_emb):
-        scores = img_emb.mm(cap_emb.t())
-        scores2 = scores - 10 * torch.eye(len(scores)).cuda()
-        cap_neg_ind = scores2.max(1)[1]
-        img_neg_ind = scores2.max(0)[1]
-        return cap_neg_ind, img_neg_ind
+        return loss
 
     def train_emb(self, images, captions, lengths, image_lengths=None, warmup_alpha=None):
         """One training step given images and captions.
@@ -165,12 +157,9 @@ class VSEModel(object):
         # compute the embeddings
         img_emb, cap_emb = self.forward_emb(images, captions, lengths, image_lengths=image_lengths)
 
-        # TODO Two Forward
-        cap_neg_ind, img_neg_ind = self.select_triplet(img_emb, cap_emb)
-
         # measure accuracy and record loss
         self.optimizer.zero_grad()
-        loss, loss_i2t, loss_t2i = self.forward_loss(img_emb, cap_emb)
+        loss = self.forward_loss(img_emb, cap_emb)
 
         if warmup_alpha is not None:
             loss = loss * warmup_alpha
@@ -180,21 +169,4 @@ class VSEModel(object):
         if self.grad_clip > 0:
             clip_grad_norm_(self.params, self.grad_clip)
         self.optimizer.step()
-
-        # TODO Two Forward
-        img_emb, cap_emb = self.forward_emb(images, captions, lengths, image_lengths)
-        loss_i2t_2, loss_t2i_2 = self.criterion.forward2(img_emb, cap_emb, img_neg_ind, cap_neg_ind)
-
-        loss_i2t = loss_i2t > 0
-        loss_t2i = loss_t2i > 0
-        loss_i2t_2 = loss_i2t_2 > 0
-        loss_t2i_2 = loss_t2i_2 > 0
-        self.logger.update('num_i2t', loss_i2t.sum().item())
-        self.logger.update('num_t2i', loss_t2i.sum().item())
-        self.logger.update('num_i2t_2', loss_i2t_2.sum().item())
-        self.logger.update('num_t2i_2', loss_t2i_2.sum().item())
-        self.logger.update('inter_i2t', (loss_i2t & loss_i2t_2).sum().item())
-        self.logger.update('inter_t2i', (loss_t2i & loss_t2i_2).sum().item())
-        self.logger.update('diff_i2t', (~loss_i2t & loss_i2t_2).sum().item())
-        self.logger.update('diff_t2i', (~loss_t2i & loss_t2i_2).sum().item())
 
